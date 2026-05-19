@@ -21,19 +21,26 @@ import campaignsRoutes from "./routes/campaigns.js";
 
 const app = new Hono();
 
-// ✅ FIXED CORS CONFIGURATION
-app.use("*", cors({
-  origin: "https://mail-flow-gules.vercel.app",  // Your exact Vercel frontend URL
-  credentials: true,
-  allowHeaders: ["Content-Type", "Authorization", "Cookie"],
-  allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-}));
+// ─── 1. CORS — must be the very first middleware ───────────────────────────
+app.use(
+  "*",
+  cors({
+    origin: "https://mail-flow-gules.vercel.app",
+    credentials: true,
+    allowHeaders: ["Content-Type", "Authorization", "Cookie"],
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  })
+);
 
 app.use("*", logger());
 
-// Public routes
-app.route("/api/auth", authRoutes);
+// ─── 2. Short-circuit ALL preflight requests before auth can block them ────
+app.options("*", (c) => c.body(null, 204));
+
+// ─── 3. Public routes (no auth required) ──────────────────────────────────
 app.get("/health", (c) => c.json({ status: "OK", version: "3.0.0" }));
+
+app.route("/api/auth", authRoutes);
 
 app.get("/api/user/info", async (c) => {
   try {
@@ -56,8 +63,10 @@ app.get("/api/user/info", async (c) => {
   }
 });
 
-// Protected routes
+// ─── 4. Auth guard — applied AFTER the OPTIONS short-circuit ──────────────
 app.use("/api/*", authMiddleware);
+
+// ─── 5. Protected routes ──────────────────────────────────────────────────
 app.route("/api/send", sendRoutes);
 app.route("/api/report", reportRoutes);
 app.route("/api/config", configRoutes);
@@ -66,18 +75,19 @@ app.route("/api/dashboard", dashboardRoutes);
 app.route("/api/contacts", contactsRoutes);
 app.route("/api/campaigns", campaignsRoutes);
 
-// 404 handler
+// ─── 6. 404 handler ───────────────────────────────────────────────────────
 app.notFound((c) => {
   console.log(`404 Not Found: ${c.req.method} ${c.req.path}`);
   return c.json({ success: false, message: "Endpoint not found" }, 404);
 });
 
-// Error handler
+// ─── 7. Global error handler ──────────────────────────────────────────────
 app.onError((err, c) => {
   console.error("Application error:", err);
   return c.json({ success: false, message: "Internal Server Error" }, 500);
 });
 
+// ─── 8. Server startup ────────────────────────────────────────────────────
 const port = Number(process.env.PORT) || 8080;
 
 async function startServer() {
