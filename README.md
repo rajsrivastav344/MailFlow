@@ -1,122 +1,152 @@
 # MailFlow — Bulk Email Sender
 
 <div align="center">
-  <img src="screenshots/s1.png" alt="Dashboard" width="800" />
+  <img src="screenshots/s1.png" alt="MailFlow Dashboard" width="800" />
   <p><em>Professional bulk email sending platform with campaign management and analytics</em></p>
 </div>
 
+---
+
 ## 📋 Overview
 
-MailFlow is a full-stack bulk email sending application that allows users to manage contacts, create email campaigns with a rich text editor, configure SMTP settings, and track email delivery. Built with **Next.js 14** (frontend) and **Hono** (backend).
+MailFlow is a full-stack bulk email sending platform that allows users to manage contacts, create and send email campaigns, configure SMTP settings, and monitor campaign performance.
 
-### Features
+Built with **Next.js 14** for the frontend and **Hono** for the backend, MailFlow provides a modern and responsive email marketing experience.
 
-- 🔐 **Authentication** — Secure login/registration with session management
-- 📇 **Contact Management** — CRUD operations, group management, CSV import/export
-- 📧 **Campaign Management** — Create, edit, send, and track email campaigns
-- ✨ **Rich Text Editor** — WYSIWYG editor for crafting beautiful emails
-- ⚙️ **SMTP Configuration** — Configure any SMTP server, test connection
-- 📊 **Dashboard** — Real-time statistics and campaign performance
-- 🎨 **Modern UI** — Responsive design with Tailwind CSS
+---
+
+## ✨ Features
+
+* 🔐 **Authentication** — Secure login and registration with session management
+* 📇 **Contact Management** — CRUD operations, contact groups, CSV import/export
+* 📧 **Campaign Management** — Create, edit, schedule, and send campaigns
+* ✨ **Rich Text Editor** — WYSIWYG email editor powered by Tiptap
+* ⚙️ **SMTP Configuration** — Configure and test any SMTP provider
+* 📊 **Dashboard Analytics** — Real-time campaign and contact statistics
+* 🎨 **Modern UI** — Responsive interface built with Tailwind CSS
+
+---
 
 ## 📸 Screenshots
 
-| Dashboard | Campaigns | Contacts |
-|-----------|-----------|----------|
+| Dashboard                        | Campaigns                        | Contacts                        |
+| -------------------------------- | -------------------------------- | ------------------------------- |
 | ![Dashboard](screenshots/s1.png) | ![Campaigns](screenshots/s2.png) | ![Contacts](screenshots/s3.png) |
 
-| SMTP Settings | Email Editor |
-|---------------|--------------|
+| SMTP Settings                        | Email Editor             |
+| ------------------------------------ | ------------------------ |
 | ![SMTP Settings](screenshots/s4.png) | Rich text email composer |
 
-## 📁 Project Structure
-MailFlow/
-├── frontend/ # Next.js 14 frontend
-│ ├── app/ # App Router pages
-│ │ ├── layout.tsx # Root layout with providers
-│ │ ├── page.tsx # Landing/redirect page
-│ │ ├── login/page.tsx # Login page
-│ │ ├── register/page.tsx # Registration page
-│ │ └── dashboard/ # Protected routes
-│ │ ├── layout.tsx # Dashboard layout (sidebar)
-│ │ ├── page.tsx # Dashboard home
-│ │ ├── contacts/ # Contact management
-│ │ ├── campaigns/ # Campaign management
-│ │ └── settings/ # SMTP & user settings
-│ ├── components/ # Reusable components
-│ │ ├── layout/ # Sidebar, TopBar
-│ │ └── email/ # RichEditor component
-│ ├── lib/ # Utilities
-│ │ ├── api.ts # API client
-│ │ ├── auth-context.tsx # Authentication context
-│ │ ├── validations.ts # Zod schemas
-│ │ └── utils.ts # Helper functions
-│ ├── types/ # TypeScript definitions
-│ ├── public/ # Static assets
-│ └── package.json
-│
-├── backend/ # Hono backend API
-│ ├── src/
-│ │ ├── app.ts # Main application
-│ │ ├── middleware/ # Auth middleware
-│ │ ├── routes/ # API routes
-│ │ │ ├── auth.ts # Authentication endpoints
-│ │ │ ├── contacts.ts # Contact management
-│ │ │ ├── campaigns.ts # Campaign endpoints
-│ │ │ ├── config.ts # SMTP configuration
-│ │ │ └── dashboard.ts # Statistics
-│ │ ├── services/ # Business logic
-│ │ │ ├── userDatabase.ts
-│ │ │ ├── emailService.ts
-│ │ │ └── notificationService.ts
-│ │ └── types.ts # Type definitions
-│ ├── data/ # SQLite database files
-│ ├── .env # Environment variables
-│ └── package.json
-│
-├── screenshots/ # Application screenshots
-│ ├── s1.png # Dashboard
-│ ├── s2.png # Campaigns
-│ ├── s3.png # Contacts
-│ └── s4.png # SMTP Settings
-│
-└── README.md # This file
+---
 
+## 📁 Project Structure
+
+```bash
+MailFlow/
+├── frontend/                         # Next.js 14 frontend
+│   ├── app/
+│   │   ├── layout.tsx               # Root layout with providers
+│   │   ├── page.tsx                 # Landing page
+│   │   ├── login/page.tsx           # Login page
+│   │   ├── register/page.tsx        # Registration page
+│   │   └── dashboard/               # Protected dashboard routes
+│   │       ├── layout.tsx           # Dashboard layout
+│   │       ├── page.tsx             # Dashboard home
+│   │       ├── contacts/            # Contact management
+│   │       ├── campaigns/           # Campaign management
+│   │       └── settings/            # SMTP settings
+│   │
+│   ├── components/
+│   │   ├── layout/                  # Sidebar, Navbar
+│   │   └── email/                   # Rich text editor
+│   │
+│   ├── lib/
+│   │   ├── api.ts                   # API client
+│   │   ├── auth-context.tsx         # Auth provider
+│   │   ├── validations.ts           # Zod schemas
+│   │   └── utils.ts                 # Utility functions
+│   │
+│   ├── types/                       # TypeScript types
+│   ├── public/                      # Static assets
+│   └── package.json
+│
+├── backend/                         # Hono backend API
+│   ├── src/
+│   │   ├── app.ts                   # Main application entry
+│   │   ├── middleware/              # Authentication middleware
+│   │   ├── routes/
+│   │   │   ├── auth.ts              # Authentication routes
+│   │   │   ├── contacts.ts          # Contact routes
+│   │   │   ├── campaigns.ts         # Campaign routes
+│   │   │   ├── config.ts            # SMTP configuration
+│   │   │   └── dashboard.ts         # Dashboard statistics
+│   │   │
+│   │   ├── services/
+│   │   │   ├── userDatabase.ts
+│   │   │   ├── emailService.ts
+│   │   │   └── notificationService.ts
+│   │   │
+│   │   └── types.ts
+│   │
+│   ├── data/                        # SQLite database
+│   ├── .env
+│   └── package.json
+│
+├── screenshots/
+│   ├── s1.png                       # Dashboard
+│   ├── s2.png                       # Campaigns
+│   ├── s3.png                       # Contacts
+│   └── s4.png                       # SMTP Settings
+│
+└── README.md
+```
+
+---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- Node.js 18+ or Bun 1.0+
-- npm or yarn package manager
-- Gmail account (for SMTP) or any SMTP provider
+Ensure you have the following installed:
 
-### Installation
+* Node.js 18+
+* npm, yarn, or bun
+* SMTP provider credentials (Gmail or any SMTP service)
 
-#### 1. Clone and Setup Backend
+---
+
+## ⚙️ Installation
+
+### 1️⃣ Clone Repository
 
 ```bash
-# Clone the repository
-git clone <your-repo-url>
-cd MailFlow/backend
+git clone <your-repository-url>
+cd MailFlow
+```
+
+---
+
+### 2️⃣ Backend Setup
+
+```bash
+cd backend
 
 # Install dependencies
 npm install
 
-# Create environment file
+# Copy environment variables
 cp .env.example .env
+```
 
-# Edit .env with your configuration
-# Required: SESSION_SECRET, SMTP settings (optional)
-env.example:
+### Backend `.env`
 
-env
+```env
 PORT=8080
 CORS_ORIGIN=http://localhost:3000
 SESSION_SECRET=your-super-secret-key-min-32-chars
 NODE_ENV=development
 
-# SMTP Configuration (optional - users can configure their own)
+# SMTP Configuration
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_SECURE=false
@@ -124,212 +154,325 @@ SMTP_USER=your-email@gmail.com
 SMTP_PASS=your-app-password
 FROM_EMAIL=noreply@yourdomain.com
 FROM_NAME=MailFlow
-2. Setup Frontend
-bash
+```
+
+---
+
+### 3️⃣ Frontend Setup
+
+```bash
 cd ../frontend
 
 # Install dependencies
 npm install
 
-# Copy environment file
+# Copy environment variables
 cp .env.example .env.local
-.env.local:
+```
 
-env
+### Frontend `.env.local`
+
+```env
 NEXT_PUBLIC_API_URL=http://localhost:8080
-Running the Application
-Terminal 1 - Backend (port 8080)
-bash
+```
+
+---
+
+## ▶️ Running the Application
+
+### Start Backend
+
+```bash
 cd backend
 npm run dev
-Terminal 2 - Frontend (port 3000)
-bash
+```
+
+Backend runs on:
+
+```bash
+http://localhost:8080
+```
+
+---
+
+### Start Frontend
+
+```bash
 cd frontend
 npm run dev
-Access the Application
-Frontend: http://localhost:3000
+```
 
-Backend API: http://localhost:8080
+Frontend runs on:
 
-Health Check: http://localhost:8080/health
+```bash
+http://localhost:3000
+```
 
-🔧 Configuration
-SMTP Setup (for Gmail)
-Enable 2-Step Verification on your Google Account
+---
 
-Generate App Password:
+## 🔗 Application URLs
 
-Go to https://myaccount.google.com/apppasswords
+| Service      | URL                                                          |
+| ------------ | ------------------------------------------------------------ |
+| Frontend     | [http://localhost:3000](http://localhost:3000)               |
+| Backend API  | [http://localhost:8080](http://localhost:8080)               |
+| Health Check | [http://localhost:8080/health](http://localhost:8080/health) |
 
-Select app: "Mail"
+---
 
-Select device: "Windows Computer"
+## 🔧 SMTP Configuration
 
-Copy the 16-character password
+### Gmail SMTP Setup
 
-Enable IMAP in Gmail Settings → Forwarding and POP/IMAP
+1. Enable **2-Step Verification** on your Google account.
+2. Generate an **App Password**:
 
-SMTP Settings in App
-After logging in, go to Settings → SMTP Settings and configure:
+```text
+Google Account → Security → App Passwords
+```
 
-Field	Value
-SMTP Host	smtp.gmail.com
-Port	587 (or 465 with SSL)
-Use SSL/TLS	Uncheck for 587, Check for 465
-Username	Your full Gmail address
-Password	The 16-character App Password
-From Name	Your display name
-From Email	Your Gmail address
-🛠 Tech Stack
-Frontend
-Technology	Purpose
-Next.js 14	React framework with App Router
-TypeScript	Type safety
-Tailwind CSS	Styling
-TanStack Query	Server state management
-React Hook Form	Form handling
-Zod	Schema validation
-Tiptap	Rich text editor
-Lucide React	Icons
-Backend
-Technology	Purpose
-Hono	Lightweight HTTP framework
-better-sqlite3	SQLite database
-Argon2	Password hashing
-Nodemailer	Email sending
-Zod	Request validation
-📡 API Endpoints
-All endpoints are prefixed with /api.
+3. Choose:
 
-Authentication
-Method	Endpoint	Description
-POST	/auth/register	Create new account
-POST	/auth/login	Login with email/password
-POST	/auth/logout	Logout user
-GET	/user/info	Get current user
-Contacts
-Method	Endpoint	Description
-GET	/contacts	List contacts (paginated)
-GET	/contacts/groups	List contact groups
-POST	/contacts	Create contact
-PUT	/contacts/:id	Update contact
-DELETE	/contacts/:id	Delete contact
-Campaigns
-Method	Endpoint	Description
-GET	/campaigns	List campaigns
-GET	/campaigns/:id	Get campaign details
-POST	/campaigns	Create campaign
-PUT	/campaigns/:id	Update campaign
-DELETE	/campaigns/:id	Delete campaign
-POST	/campaigns/:id/send	Send campaign
-POST	/campaigns/:id/test	Send test email
-SMTP Configuration
-Method	Endpoint	Description
-GET	/config/smtp	Get SMTP config
-POST	/config/smtp	Save SMTP config
-POST	/config/smtp/test	Test connection
-Dashboard
-Method	Endpoint	Description
-GET	/dashboard/stats	Get statistics
-🎯 Usage Guide
-1. Create an Account
-Navigate to http://localhost:3000/register
+* App: Mail
+* Device: Windows Computer
 
-Fill in your details and create an account
+4. Copy the generated 16-character password.
+5. Enable IMAP in Gmail Settings:
 
-2. Configure SMTP (Required for sending emails)
-Go to Settings → SMTP Settings
+```text
+Settings → Forwarding and POP/IMAP → Enable IMAP
+```
 
-Enter your SMTP credentials
+---
 
-Click "Save Settings"
+## 📨 SMTP Settings in Application
 
-Send a test email to verify
+Navigate to:
 
-3. Add Contacts
-Go to Contacts page
+```text
+Dashboard → Settings → SMTP Settings
+```
 
-Add contacts manually or import CSV
+| Field      | Value              |
+| ---------- | ------------------ |
+| SMTP Host  | smtp.gmail.com     |
+| Port       | 587                |
+| SSL/TLS    | Disabled           |
+| Username   | Your Gmail Address |
+| Password   | Gmail App Password |
+| From Name  | Your Name          |
+| From Email | Your Gmail Address |
 
-Create contact groups for organization
+---
 
-4. Create Campaign
-Go to Campaigns → New Campaign
+## 🛠 Tech Stack
 
-Write your email content using the rich text editor
+### Frontend
 
-Select recipient group
+| Technology      | Purpose                         |
+| --------------- | ------------------------------- |
+| Next.js 14      | React framework with App Router |
+| TypeScript      | Type safety                     |
+| Tailwind CSS    | Styling                         |
+| TanStack Query  | Server state management         |
+| React Hook Form | Form handling                   |
+| Zod             | Validation                      |
+| Tiptap          | Rich text editor                |
+| Lucide React    | Icons                           |
 
-Save as draft or schedule for later
+### Backend
 
-5. Send Campaign
-Go to Campaigns list
+| Technology     | Purpose                    |
+| -------------- | -------------------------- |
+| Hono           | Lightweight HTTP framework |
+| better-sqlite3 | SQLite database            |
+| Argon2         | Password hashing           |
+| Nodemailer     | Email sending              |
+| Zod            | Request validation         |
 
-Click "Send" on your campaign
+---
 
-Choose recipient group
+## 📡 API Endpoints
 
-Confirm and send
+All API routes are prefixed with:
 
-🔒 Security Features
-Password Hashing: Argon2 for secure password storage
+```text
+/api
+```
 
-Session Management: Signed tokens with expiration
+### Authentication
 
-Input Validation: Zod schemas on all endpoints
+| Method | Endpoint       | Description      |
+| ------ | -------------- | ---------------- |
+| POST   | /auth/register | Create account   |
+| POST   | /auth/login    | Login user       |
+| POST   | /auth/logout   | Logout user      |
+| GET    | /user/info     | Get current user |
 
-CORS Protection: Configured for frontend origin only
+### Contacts
 
-SQL Injection Prevention: Parameterized queries
+| Method | Endpoint         | Description        |
+| ------ | ---------------- | ------------------ |
+| GET    | /contacts        | Get contacts       |
+| GET    | /contacts/groups | Get contact groups |
+| POST   | /contacts        | Create contact     |
+| PUT    | /contacts/:id    | Update contact     |
+| DELETE | /contacts/:id    | Delete contact     |
 
-📦 Build for Production
-Backend
-bash
+### Campaigns
+
+| Method | Endpoint            | Description      |
+| ------ | ------------------- | ---------------- |
+| GET    | /campaigns          | Get campaigns    |
+| GET    | /campaigns/:id      | Campaign details |
+| POST   | /campaigns          | Create campaign  |
+| PUT    | /campaigns/:id      | Update campaign  |
+| DELETE | /campaigns/:id      | Delete campaign  |
+| POST   | /campaigns/:id/send | Send campaign    |
+| POST   | /campaigns/:id/test | Send test email  |
+
+### SMTP Configuration
+
+| Method | Endpoint          | Description          |
+| ------ | ----------------- | -------------------- |
+| GET    | /config/smtp      | Get SMTP config      |
+| POST   | /config/smtp      | Save SMTP config     |
+| POST   | /config/smtp/test | Test SMTP connection |
+
+### Dashboard
+
+| Method | Endpoint         | Description              |
+| ------ | ---------------- | ------------------------ |
+| GET    | /dashboard/stats | Get dashboard statistics |
+
+---
+
+## 🎯 Usage Guide
+
+### 1️⃣ Create an Account
+
+* Navigate to `/register`
+* Fill in your details
+* Create your account
+
+### 2️⃣ Configure SMTP
+
+* Go to `Settings → SMTP Settings`
+* Add your SMTP credentials
+* Save settings
+* Send a test email
+
+### 3️⃣ Add Contacts
+
+* Navigate to `Contacts`
+* Add contacts manually or import CSV files
+* Create groups for better organization
+
+### 4️⃣ Create Campaign
+
+* Go to `Campaigns → New Campaign`
+* Write email content using the editor
+* Select recipient group
+* Save or schedule the campaign
+
+### 5️⃣ Send Campaign
+
+* Open campaign list
+* Click `Send`
+* Confirm recipients
+* Launch your campaign
+
+---
+
+## 🔒 Security Features
+
+* Argon2 password hashing
+* Secure session management
+* Zod validation on all endpoints
+* CORS protection
+* Parameterized SQL queries
+* Protected dashboard routes
+
+---
+
+## 📦 Production Build
+
+### Backend
+
+```bash
 cd backend
 npm run build
 npm start
-Frontend
-bash
+```
+
+### Frontend
+
+```bash
 cd frontend
 npm run build
 npm start
-🐛 Troubleshooting
-Common Issues
-Issue	Solution
-Backend won't start	Check if port 8080 is free, change PORT in .env
-Frontend can't connect	Verify backend is running on port 8080
-SMTP connection fails	Use App Password for Gmail, enable IMAP
-401 Unauthorized	Clear cookies and login again
-Database errors	Delete data/ folder and restart
-Gmail SMTP Troubleshooting
-Enable IMAP in Gmail settings
+```
 
-Generate App Password (not regular password)
+---
 
-Visit https://accounts.google.com/DisplayUnlockCaptcha
+## 🐛 Troubleshooting
 
-Try port 465 with SSL if 587 fails
+| Issue                      | Solution                             |
+| -------------------------- | ------------------------------------ |
+| Backend won't start        | Ensure port 8080 is available        |
+| Frontend cannot connect    | Verify backend is running            |
+| SMTP authentication failed | Use Gmail App Password               |
+| Unauthorized requests      | Clear cookies and login again        |
+| Database errors            | Delete `data/` directory and restart |
 
-📄 License
-This project is built for the Full Stack Developer Assignment.
+---
 
-👨‍💻 Author
-Built with ❤️ using Next.js and Hono
+## 📧 Gmail SMTP Troubleshooting
 
-Quick Commands Reference
-bash
-# Backend
+* Enable IMAP in Gmail settings
+* Use App Password instead of regular password
+* Visit:
+
+```text
+https://accounts.google.com/DisplayUnlockCaptcha
+```
+
+* Try SSL with port 465 if 587 fails
+
+---
+
+## 📄 License
+
+This project was built as a Full Stack Developer Assignment.
+
+---
+
+## 👨‍💻 Author
+
+Built with ❤️ using Next.js and Hono.
+
+---
+
+## ⚡ Quick Commands Reference
+
+### Backend
+
+```bash
 cd backend
-npm install          # Install dependencies
-npm run dev          # Start development server
-npm run build        # Build for production
-npm start            # Run production server
+npm install
+npm run dev
+npm run build
+npm start
+```
 
-# Frontend
+### Frontend
+
+```bash
 cd frontend
-npm install          # Install dependencies
-npm run dev          # Start development server
-npm run build        # Build for production
-npm start            # Run production server
-npm run type-check   # Run TypeScript checks
-npm run lint         # Run ESLint
+npm install
+npm run dev
+npm run build
+npm start
+npm run type-check
+npm run lint
+```
