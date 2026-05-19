@@ -29,9 +29,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     try {
-      const { user } = await authApi.me();
-      setUser(user);
-    } catch {
+      // ✅ Use the correct endpoint: /user/info
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/user/info`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        credentials: 'include',
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data.user);
+      } else {
+        // Token is invalid
+        Cookies.remove('auth_token');
+      }
+    } catch (error) {
+      console.error('Fetch user error:', error);
       Cookies.remove('auth_token');
     } finally {
       setIsLoading(false);
@@ -42,42 +56,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     fetchMe();
   }, [fetchMe]);
 
-  // ✅ Add redirect logic but avoid loops
+  // Redirect logic to avoid loops
   useEffect(() => {
-    // Don't redirect while still loading
     if (isLoading) return;
     
     const isPublicRoute = pathname === '/login' || pathname === '/register';
     
-    // Redirect authenticated users away from login/register
     if (user && isPublicRoute) {
-      router.replace('/dashboard'); // Use replace instead of push
-    }
-    // Redirect unauthenticated users to login (except on public routes)
-    else if (!user && !isPublicRoute && pathname !== '/') {
+      router.replace('/dashboard');
+    } else if (!user && !isPublicRoute && pathname !== '/') {
       router.replace('/login');
     }
   }, [user, isLoading, pathname, router]);
 
- const login = async (email: string, password: string) => {
-  console.log('🔐 Login attempt with:', { email, password: '***' });
-  
-  try {
-    const res = await authApi.login(email, password);
-    console.log('📦 Login response:', res);
+  const login = async (email: string, password: string) => {
+    console.log('🔐 Login attempt with:', { email, password: '***' });
     
-    if (res.token) {
-      Cookies.set('auth_token', res.token, { expires: 7, sameSite: 'strict' });
-      setUser(res.user);
-      console.log('✅ Login successful');
-    } else {
-      console.log('❌ No token in response');
+    try {
+      const res = await authApi.login(email, password);
+      console.log('📦 Login response:', res);
+      
+      if (res.token) {
+        Cookies.set('auth_token', res.token, { expires: 7, sameSite: 'strict' });
+        setUser(res.user);
+        console.log('✅ Login successful');
+      } else {
+        console.log('❌ No token in response');
+      }
+    } catch (error) {
+      console.error('❌ Login error:', error);
+      throw error;
     }
-  } catch (error) {
-    console.error('❌ Login error:', error);
-    throw error;
-  }
-};
+  };
 
   const logout = async () => {
     try {
@@ -85,7 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       Cookies.remove('auth_token');
       setUser(null);
-      router.replace('/login'); // Use replace instead of href
+      router.replace('/login');
     }
   };
 

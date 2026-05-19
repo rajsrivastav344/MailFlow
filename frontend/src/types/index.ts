@@ -4,11 +4,10 @@
 // Auth Types
 // =====================
 export interface User {
-  id: string;  // Changed from number to string (backend returns "user_123456")
-  email: string;  // Backend uses email, not username
-  name: string;   // Backend uses name, not username
-  role?: 'admin' | 'user';
-  created_at: string;  // Changed from createdAt
+  id: string;
+  email: string;
+  name: string;        // ✅ Backend returns 'name'
+  created_at?: string;
   last_login?: string;
   is_active?: boolean;
 }
