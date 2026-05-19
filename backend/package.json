@@ -1,0 +1,30 @@
+{
+  "name": "bulk-email-sender-backend",
+  "version": "2.0.0",
+  "scripts": {
+    "dev": "tsx watch src/app.ts",
+    "build": "tsc",
+    "start": "node dist/app.js"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.14",
+    "@hono/zod-validator": "^0.8.0",
+    "argon2": "^0.40.3",
+    "better-sqlite3": "^11.10.0",
+    "csv-stringify": "^6.7.0",
+    "dotenv": "^16.6.1",
+    "hono": "^4.12.19",
+    "nodemailer": "^6.10.1",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7",
+    "xlsx": "^0.18.5",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/node": "^20",
+    "@types/nodemailer": "^6.4.15",
+    "tsx": "^4.15.7",
+    "typescript": "^5.4.5"
+  }
+}
