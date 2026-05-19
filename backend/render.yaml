@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: mailflow-backend
+    runtime: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 8080
+      - key: CORS_ORIGIN
+        value: https://mailflow-frontend.vercel.app
