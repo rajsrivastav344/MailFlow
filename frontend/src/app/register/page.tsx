@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'react-hot-toast';
 import { Mail, Lock, User, ArrowRight, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { authApi } from '@/lib/api';  // ✅ Import authApi
 import { z } from 'zod';
 
 const registerSchema = z.object({
@@ -32,22 +33,20 @@ export default function RegisterPage() {
   const onSubmit = async (data: RegisterSchema) => {
     setIsSubmitting(true);
     try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-
-      const result = await response.json();
-
-      if (response.ok && result.success) {
+      // ✅ Use authApi.register
+      const result = await authApi.register(data.name, data.email, data.password);
+      
+      // ✅ Check if successful (response has success: true)
+      if (result.success) {
         toast.success('Account created! Please log in.');
         router.push('/login');
       } else {
-        toast.error(result.message || 'Registration failed');
+        toast.error('Registration failed. Please try again.');
       }
-    } catch (error) {
-      toast.error('Network error. Please try again.');
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      // ✅ Handle error message safely
+      toast.error(error?.message || 'Network error. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
