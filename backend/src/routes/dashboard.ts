@@ -1,26 +1,36 @@
 // src/routes/dashboard.ts
 import { Hono } from "hono";
-import { requireAuth } from "../middleware/auth";
+import { requireAuth } from "../middleware/auth.js";
 
 const app = new Hono();
 
 // ✅ ADD THIS - Simple stats endpoint for frontend
 app.get("/stats", async (c) => {
-  requireAuth(c);
-  
-  return c.json({
-    totalContacts: 0,
-    totalCampaigns: 0,
-    emailsSent: 0,
-    openRate: 0,
-    clickRate: 0,
-    bounceRate: 0
-  });
+  try {
+    const user = requireAuth(c);
+    
+    // You can enhance this with real data from your services
+    return c.json({
+      totalContacts: 0,
+      totalCampaigns: 0,
+      emailsSent: 0,
+      openRate: 0,
+      clickRate: 0,
+      bounceRate: 0
+    });
+  } catch (error) {
+    console.error("Stats endpoint error:", error);
+    return c.json({ error: "Unauthorized" }, 401);
+  }
 });
 
 // ✅ FIXED: Remove "/dashboard" from path - now just "/poll-status"
 app.get("/poll-status", async (c) => {
-  requireAuth(c);
+  try {
+    requireAuth(c);
+  } catch (error) {
+    return c.json({ success: false, message: "Unauthorized" }, 401);
+  }
 
   try {
     let hasActiveBatch = false;
@@ -28,20 +38,23 @@ app.get("/poll-status", async (c) => {
     let hasRunningScheduledJobs = false;
 
     try {
-      const { batchService } = await import("../services/batchService");
+      const { batchService } = await import("../services/batchService.js");
       const status = batchService.getBatchStatus();
       hasActiveBatch = status.isRunning;
-    } catch {
+    } catch (err) {
+      console.log("Batch service not available:", err);
       hasActiveBatch = false;
     }
 
     try {
-      const { schedulerService } = await import("../services/schedulerService");
+      const { schedulerService } = await import("../services/schedulerService.js");
       const jobs = await schedulerService.getScheduledJobs();
-      hasScheduledJobs = jobs.length > 0;
-      hasRunningScheduledJobs = jobs.some((j: any) => j.status === "running");
-    } catch {
+      hasScheduledJobs = jobs && jobs.length > 0;
+      hasRunningScheduledJobs = jobs && jobs.some((j: any) => j.status === "running");
+    } catch (err) {
+      console.log("Scheduler service not available:", err);
       hasScheduledJobs = false;
+      hasRunningScheduledJobs = false;
     }
 
     let pollNeeded = false;
@@ -67,7 +80,7 @@ app.get("/poll-status", async (c) => {
         hasScheduledJobs,
         hasRunningScheduledJobs,
         activeBatchCount: hasActiveBatch ? 1 : 0,
-        scheduledJobCount: hasScheduledJobs ? 1 : 0,
+        scheduledJobCount: hasScheduledJobs ? (hasRunningScheduledJobs ? 2 : 1) : 0,
         lastUpdated: new Date().toISOString(),
       },
     });
@@ -84,7 +97,6 @@ app.get("/poll-status", async (c) => {
         activeBatchCount: 0,
         scheduledJobCount: 0,
         lastUpdated: new Date().toISOString(),
-        error: "Service unavailable",
       },
     });
   }
@@ -92,24 +104,34 @@ app.get("/poll-status", async (c) => {
 
 // ✅ FIXED: Remove "/dashboard" from path - now just "/data"
 app.get("/data", async (c) => {
-  requireAuth(c);
+  try {
+    requireAuth(c);
+  } catch (error) {
+    return c.json({ success: false, message: "Unauthorized" }, 401);
+  }
 
   try {
     let batchStatus = null;
     let scheduledJobs: any[] = [];
 
     try {
-      const { batchService } = await import("../services/batchService");
+      const { batchService } = await import("../services/batchService.js");
       batchStatus = batchService.getBatchStatus();
-    } catch { /* not available */ }
+    } catch (err) {
+      console.log("Batch service not available:", err);
+    }
 
     try {
-      const { schedulerService } = await import("../services/schedulerService");
+      const { schedulerService } = await import("../services/schedulerService.js");
       const jobs = await schedulerService.getScheduledJobs();
-      scheduledJobs = jobs
-        .filter((j: any) => j.status === "scheduled" || j.status === "running")
-        .slice(0, 5);
-    } catch { /* not available */ }
+      scheduledJobs = jobs && jobs.length > 0
+        ? jobs
+            .filter((j: any) => j.status === "scheduled" || j.status === "running")
+            .slice(0, 5)
+        : [];
+    } catch (err) {
+      console.log("Scheduler service not available:", err);
+    }
 
     return c.json({
       success: true,

@@ -46,7 +46,7 @@ export interface Contact {
   user_id: string;
   name: string;
   email: string;
-  group_name: string | null;  // Changed from 'group' to 'group_name'
+  group_name: string | null;
   phone: string | null;
   company: string | null;
   notes: string | null;
@@ -511,13 +511,13 @@ class UserDatabase {
     contactData: {
       name: string;
       email: string;
-      group_name?: string;  // Changed from 'group' to 'group_name'
+      group_name?: string;
       phone?: string;
       company?: string;
       notes?: string;
     }
   ): Promise<Contact> {
-    const contactId = `cont_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+    const contactId = `cont_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`; // Fixed: substr -> substring
 
     try {
       this.db
@@ -537,7 +537,8 @@ class UserDatabase {
         );
 
       console.log(`📇 Contact created: ${contactData.name} (${contactData.email})`);
-      return this.getContactById(contactId)!;
+      const contact = await this.getContactById(contactId); // Fixed: added await
+      return contact!;
     } catch (error: any) {
       if (error.message?.includes("UNIQUE constraint failed")) {
         throw new Error("Contact with this email already exists");
@@ -568,7 +569,7 @@ class UserDatabase {
     userId: string,
     updates: Partial<Omit<Contact, "id" | "user_id" | "created_at" | "updated_at">>
   ): Promise<Contact | null> {
-    const allowed = ["name", "email", "group_name", "phone", "company", "notes"];  // Changed 'group' to 'group_name'
+    const allowed = ["name", "email", "group_name", "phone", "company", "notes"];
     const fields = Object.keys(updates).filter((k) => allowed.includes(k));
 
     if (fields.length === 0) return null;
@@ -616,7 +617,7 @@ class UserDatabase {
     return result?.count || 0;
   }
 
-  async getContactsByGroup(userId: string, groupName: string): Promise<Contact[]> {  // Changed parameter name
+  async getContactsByGroup(userId: string, groupName: string): Promise<Contact[]> {
     return this.db
       .prepare(
         `SELECT * FROM contacts 
@@ -652,7 +653,7 @@ class UserDatabase {
       user_id: row.user_id,
       name: row.name,
       email: row.email,
-      group_name: row.group_name,  // Changed from 'group' to 'group_name'
+      group_name: row.group_name,
       phone: row.phone,
       company: row.company,
       notes: row.notes,
@@ -692,7 +693,8 @@ class UserDatabase {
         campaignData.scheduled_at || null
       );
 
-    return this.getCampaignById(campaignId)!;
+    const campaign = await this.getCampaignById(campaignId); // Fixed: added await
+    return campaign!;
   }
 
   async getUserCampaigns(userId: string): Promise<Campaign[]> {

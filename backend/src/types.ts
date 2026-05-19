@@ -20,6 +20,7 @@ export interface CreateContactPayload {
   group_name?: string;
   phone?: string;
   company?: string;
+  
   notes?: string;
 }
 
@@ -63,9 +64,6 @@ export interface Campaign {
   sent_at: string | null;
   created_at: string;
   updated_at: string;
-  // Frontend convenience fields (optional)
-  createdAt?: string;  // For compatibility with existing components
-  sentCount?: number;  // For compatibility
 }
 
 export interface CreateCampaignPayload {

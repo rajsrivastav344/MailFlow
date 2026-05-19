@@ -3,6 +3,7 @@ import Database from "better-sqlite3";
 import { randomBytes } from "crypto";
 import { existsSync, mkdirSync } from "fs";
 import { dirname } from "path";
+import type { Campaign } from "../types";
 
 // Ensure data directory exists
 const dbPath = "./data/campaigns.db";
@@ -37,6 +38,26 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_campaigns_status ON campaigns(status);
   CREATE INDEX IF NOT EXISTS idx_campaigns_created_at ON campaigns(created_at);
 `);
+
+// Define the CampaignData type for create/update operations
+interface CampaignData {
+  user_id: string;
+  name: string;
+  subject: string;
+  body: string;
+  recipient_group?: string | null;
+  status?: string;
+  scheduled_at?: string | null;
+}
+
+interface CampaignUpdateData {
+  name?: string;
+  subject?: string;
+  body?: string;
+  recipient_group?: string;
+  status?: string;
+  scheduled_at?: string;
+}
 
 export const campaignService = {
   async getUserCampaigns(userId: string, page: number = 1, limit: number = 15, status?: string) {
@@ -75,14 +96,14 @@ export const campaignService = {
     };
   },
 
-  async getCampaignById(id: string, userId: string) {
+  async getCampaignById(id: string, userId: string): Promise<Campaign | undefined> {
     const stmt = db.prepare(`
       SELECT * FROM campaigns WHERE id = ? AND user_id = ?
     `);
-    return stmt.get(id, userId);
+    return stmt.get(id, userId) as Campaign | undefined;
   },
 
-  async createCampaign(data: any) {
+  async createCampaign(data: CampaignData): Promise<Campaign | undefined> {
     const id = `camp_${Date.now()}_${randomBytes(4).toString("hex")}`;
     const stmt = db.prepare(`
       INSERT INTO campaigns (id, user_id, name, subject, body, recipient_group, status, scheduled_at)
@@ -96,14 +117,14 @@ export const campaignService = {
       data.subject,
       data.body,
       data.recipient_group || null,
-      data.status,
+      data.status || 'draft',
       data.scheduled_at || null
     );
     
     return this.getCampaignById(id, data.user_id);
   },
 
-  async updateCampaign(id: string, userId: string, data: any) {
+  async updateCampaign(id: string, userId: string, data: CampaignUpdateData): Promise<Campaign | undefined | null> {
     const fields: string[] = [];
     const values: any[] = [];
     
@@ -129,7 +150,7 @@ export const campaignService = {
     return this.getCampaignById(id, userId);
   },
 
-  async deleteCampaign(id: string, userId: string) {
+  async deleteCampaign(id: string, userId: string): Promise<boolean> {
     const stmt = db.prepare(`DELETE FROM campaigns WHERE id = ? AND user_id = ?`);
     const result = stmt.run(id, userId);
     return result.changes > 0;
@@ -173,7 +194,7 @@ export const campaignService = {
     return stmt.get(id, userId);
   },
 
-  async duplicateCampaign(id: string, userId: string) {
+  async duplicateCampaign(id: string, userId: string): Promise<Campaign | undefined | null> {
     const original = await this.getCampaignById(id, userId);
     if (!original) return null;
     

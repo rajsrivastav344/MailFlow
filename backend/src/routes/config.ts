@@ -1,8 +1,8 @@
 // backend/src/routes/config.ts
 import { Hono } from "hono";
-import { userDatabase } from "../services/userDatabase";
-import { requireAuth } from "../middleware/auth";
-import type { SMTPDefaults } from "../types";
+import { userDatabase } from "../services/userDatabase.js";
+import { requireAuth } from "../middleware/auth.js";
+import type { SMTPDefaults } from "../types.js";
 
 const envConfig: SMTPDefaults = {
   host: process.env.SMTP_HOST || "",
@@ -18,7 +18,7 @@ const hasEnvConfig = !!(process.env.SMTP_HOST && process.env.SMTP_USER && proces
 
 const app = new Hono();
 
-// CHANGE THESE ROUTES - remove "/config" prefix
+// GET /smtp
 app.get("/smtp", (c) => {
   try {
     const user = requireAuth(c);
@@ -102,46 +102,45 @@ app.get("/smtp/active", (c) => {
 });
 
 // POST /smtp
-// backend/src/routes/config.ts - Update the test endpoint
-app.post("/smtp/test", async (c) => {
+app.post("/smtp", async (c) => {
   try {
-    requireAuth(c);
+    const user = requireAuth(c);
     const body = await c.req.json();
-    const { emailService } = await import("../services/emailService");
-    
-    const testEmail = body.email || body.testEmail;
-    
-    if (!testEmail) {
-      return c.json({ success: false, message: "Test email address is required" }, 400);
+
+    // Accept both naming conventions
+    const host = body.host;
+    const port = body.port || 587;
+    const secure = body.secure || false;
+    const user_field = body.user || body.username;
+    const pass = body.pass || body.password;
+    const from_email = body.from_email || body.fromEmail;
+    const from_name = body.from_name || body.fromName;
+    const name = body.name || "Default Configuration";
+    const is_default = body.is_default || body.isDefault || false;
+
+    if (!host || !user_field || !pass || !from_email) {
+      return c.json(
+        { success: false, message: "host, user, pass, and from_email are required" },
+        400
+      );
     }
-    
-    const config = {
-      host: body.host,
-      port: body.port || 587,
-      secure: body.secure || false,
-      auth: { user: body.user, pass: body.pass },
-    };
-    
-    // Test connection first
-    const isValid = await emailService.testConnection(config);
-    
-    if (!isValid) {
-      return c.json({ success: false, message: "SMTP connection failed" }, 400);
-    }
-    
-    // Send actual test email
-    const emailSent = await emailService.sendTestEmail(config, testEmail);
-    
-    return c.json({
-      success: emailSent,
-      message: emailSent ? "Test email sent successfully" : "Connection successful but email send failed",
+
+    const configId = await userDatabase.createSMTPConfig(user.id, {
+      name: name,
+      host: host,
+      port: port,
+      secure: secure,
+      user: user_field,
+      pass: pass,
+      from_email: from_email,
+      from_name: from_name || "",
+      is_default: is_default,
     });
+
+    return c.json({ success: true, message: "SMTP configuration saved", configId });
   } catch (error) {
-    console.error("SMTP test error:", error);
-    return c.json({ 
-      success: false, 
-      message: error instanceof Error ? error.message : "SMTP connection test failed" 
-    }, 500);
+    console.error("Create SMTP config error:", error);
+    return c.json({ success: false, message: "Failed to save SMTP configuration" }, 500);
   }
 });
 
@@ -217,23 +216,52 @@ app.post("/smtp/test", async (c) => {
   try {
     requireAuth(c);
     const body = await c.req.json();
-    const { emailService } = await import("../services/emailService");
-
-    // Make sure emailService has testConnection method
-    const isValid = await emailService.testConnection({
-      host: body.host,
-      port: body.port || 587,
-      secure: !!body.secure,
-      auth: { user: body.user, pass: body.pass },
-    });
-
+    const { emailService } = await import("../services/emailService.js");
+    
+    const testEmail = body.email || body.testEmail;
+    
+    if (!testEmail) {
+      return c.json({ success: false, message: "Test email address is required" }, 400);
+    }
+    
+    // Accept both naming conventions
+    const host = body.host;
+    const port = body.port || 587;
+    const secure = body.secure || false;
+    const user = body.user || body.username;
+    const pass = body.pass || body.password;
+    
+    if (!host || !user || !pass) {
+      return c.json({ success: false, message: "SMTP settings (host, user, pass) are required" }, 400);
+    }
+    
+    const config = {
+      host: host,
+      port: port,
+      secure: secure,
+      auth: { user: user, pass: pass },
+    };
+    
+    // Test connection first
+    const isValid = await emailService.testConnection(config);
+    
+    if (!isValid) {
+      return c.json({ success: false, message: "SMTP connection failed" }, 400);
+    }
+    
+    // Send actual test email
+    const emailSent = await emailService.sendTestEmail(config, testEmail);
+    
     return c.json({
-      success: isValid,
-      message: isValid ? "SMTP connection successful" : "SMTP connection failed",
+      success: emailSent,
+      message: emailSent ? "Test email sent successfully" : "Connection successful but email send failed",
     });
   } catch (error) {
     console.error("SMTP test error:", error);
-    return c.json({ success: false, message: "SMTP connection test failed" }, 500);
+    return c.json({ 
+      success: false, 
+      message: error instanceof Error ? error.message : "SMTP connection test failed" 
+    }, 500);
   }
 });
 

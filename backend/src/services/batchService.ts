@@ -130,38 +130,38 @@ class BatchService {
 
         const info = await emailService.sendSingleEmail({
           from: `${job.emailJob.fromName} <${job.emailJob.fromEmail}>`,
-          to: contact.Email,
+          to: contact.email,  // ✅ Fixed: lowercase email
           subject,
           html,
         });
 
         logService.addLog({
           id: `batch_${job.id}_${Date.now()}_${i}`,
-          email: contact.Email,
+          email: contact.email,  // ✅ Fixed: lowercase email
           status: "Sent",
           timestamp: new Date().toISOString(),
           messageId: info.messageId,
-          firstName: contact.FirstName,
-          company: contact.Company,
+          firstName: contact.name?.split(' ')[0] || contact.name,  // ✅ Fixed: use name
+          company: contact.company,  // ✅ Fixed: lowercase company
           subject,
         });
 
         job.emailsSent++;
-        console.log(`✅ ${contact.Email} (${job.emailsSent}/${job.totalContacts})`);
+        console.log(`✅ ${contact.email} (${job.emailsSent}/${job.totalContacts})`);
       } catch (error) {
         const msg = error instanceof Error ? error.message : "Unknown error";
         logService.addLog({
           id: `batch_${job.id}_${Date.now()}_${i}`,
-          email: contact.Email,
+          email: contact.email,  // ✅ Fixed: lowercase email
           status: "Failed",
           message: msg,
           timestamp: new Date().toISOString(),
-          firstName: contact.FirstName,
-          company: contact.Company,
+          firstName: contact.name?.split(' ')[0] || contact.name,  // ✅ Fixed: use name
+          company: contact.company,  // ✅ Fixed: lowercase company
           subject: job.emailJob.subject,
         });
         job.emailsFailed++;
-        console.error(`❌ ${contact.Email}: ${msg}`);
+        console.error(`❌ ${contact.email}: ${msg}`);
       }
 
       if (i < contacts.length - 1 && this.isRunning) {
@@ -192,7 +192,7 @@ class BatchService {
 
     if (this.currentJob.notificationSettings?.email) {
       try {
-        const { notificationService } = await import("./notificationService");
+        const { notificationService } = await import("./notificationService.js");  // ✅ Fixed: added .js extension
         await notificationService.sendJobCompletionNotification(
           this.currentJob.userId!,
           this.currentJob.notificationSettings.email,

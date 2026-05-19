@@ -1,8 +1,8 @@
 // src/services/emailService.ts
 import nodemailer from "nodemailer";
-import { logService } from "./logService";
-import { FileService } from "./fileService";
-import type { EmailConfig, EmailJob } from "../types";
+import { logService } from "./logService.js";
+import { FileService } from "./fileService.js";
+import type { EmailConfig, EmailJob } from "../types.js";
 
 export class EmailService {
   private transporter: nodemailer.Transporter | null = null;
@@ -52,8 +52,8 @@ export class EmailService {
           status: "Sent",
           timestamp: new Date().toISOString(),
           messageId: info.messageId,
-          firstName: contact.name,  // Use name field
-          company: contact.company,  // Use company field
+          firstName: contact.name,
+          company: contact.company,
           subject,
         });
 
@@ -67,8 +67,8 @@ export class EmailService {
           status: "Failed",
           message: msg,
           timestamp: new Date().toISOString(),
-          firstName: contact.name,  // Use name field
-          company: contact.company,  // Use company field
+          firstName: contact.name,
+          company: contact.company,
           subject: job.subject,
         });
         failedCount++;
@@ -105,7 +105,7 @@ export class EmailService {
     failedCount: number
   ): Promise<void> {
     try {
-      const { notificationService } = await import("./notificationService");
+      const { notificationService } = await import("./notificationService.js");
       await notificationService.sendJobCompletionNotification(
         settings.userId,
         settings.email,

@@ -1,8 +1,7 @@
 // src/middleware/auth.ts
 import type { Context, Next } from "hono";
-import { HTTPException } from "hono/http-exception";
 import { getCookie } from "hono/cookie";
-import { userDatabase, type User } from "../services/userDatabase";
+import { userDatabase, type User } from "../services/userDatabase.js";
 
 // Extend Hono's Context VariableMap
 declare module "hono" {
@@ -40,21 +39,10 @@ export async function authMiddleware(c: Context, next: Next) {
   return await next();
 }
 
-/**
- * Helper to get the authenticated user from context.
- * Throws a proper HTTP 401 response if not authenticated.
- */
 export function requireAuth(c: Context): User {
   const user = c.get("user") as User | undefined;
   if (!user) {
-    throw new HTTPException(401, { message: "User not authenticated" });
+    throw new Error("User not authenticated");
   }
   return user;
-}
-
-/**
- * Optional: Get user if authenticated, returns null otherwise
- */
-export function getUser(c: Context): User | null {
-  return c.get("user") as User | undefined || null;
 }
