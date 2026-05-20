@@ -13,7 +13,7 @@ import type {
 } from '@/types';
 
 // Use environment variable for API URL, fallback to localhost
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mailflow-backend-tgjz.onrender.com';
 const BASE_URL = `${API_URL}/api`;
 
 class ApiError extends Error {
@@ -27,7 +27,13 @@ async function request<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const token = Cookies.get('auth_token');
+  // Try to get token from localStorage first
+  let token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  
+  // Fallback to cookie if not in localStorage
+  if (!token) {
+    token = Cookies.get('auth_token');
+  }
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -41,11 +47,15 @@ async function request<T>(
   const res = await fetch(`${BASE_URL}${path}`, {
     ...options,
     headers,
-    credentials: 'include', // Important for cookies
+    credentials: 'include',
   });
 
   if (res.status === 401) {
+    // Clear tokens on 401
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     Cookies.remove('auth_token');
+    
     // Don't redirect if already on login page to avoid loops
     if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
       window.location.href = '/login';
@@ -81,8 +91,9 @@ export const authApi = {
   logout: () =>
     request<{ success: boolean }>('/auth/logout', { method: 'POST' }),
 
-  me: () =>
-    request<{ user: User }>('/user/info'), // Changed from /auth/me to /user/info to match backend
+  // ✅ REMOVED - This was causing the 401 error
+  // me: () =>
+  //   request<{ user: User }>('/user/info'),
 
   changePassword: (currentPassword: string, newPassword: string) =>
     request<{ success: boolean }>('/auth/change-password', {
@@ -121,7 +132,7 @@ export const contactsApi = {
     request<{ success: boolean }>(`/contacts/${id}`, { method: 'DELETE' }),
 
   importCsv: async (formData: FormData) => {
-    const token = Cookies.get('auth_token');
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     const response = await fetch(`${BASE_URL}/contacts/import`, {
       method: 'POST',
       headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -134,7 +145,7 @@ export const contactsApi = {
   exportCsv: () =>
     fetch(`${BASE_URL}/contacts/export/csv`, {
       headers: {
-        Authorization: `Bearer ${Cookies.get('auth_token') || ''}`,
+        Authorization: `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('token') || '' : ''}`,
       },
       credentials: 'include',
     }),
@@ -152,16 +163,16 @@ export const campaignsApi = {
   },
 
   getById: (id: string) =>
-    request<{ data: Campaign }>(`/campaigns/${id}`), // Fixed to match backend response
+    request<{ data: Campaign }>(`/campaigns/${id}`),
 
   create: (payload: CreateCampaignPayload) =>
-    request<{ success: boolean; data: Campaign }>('/campaigns', { // Fixed to match backend
+    request<{ success: boolean; data: Campaign }>('/campaigns', {
       method: 'POST',
       body: JSON.stringify({
         name: payload.name,
         subject: payload.subject,
         body: payload.body,
-        recipient_group: payload.recipient_group, // Match backend field name
+        recipient_group: payload.recipient_group,
         scheduled_at: payload.scheduled_at,
       }),
     }),
@@ -184,13 +195,13 @@ export const campaignsApi = {
   send: (id: string, recipientGroup?: string) =>
     request<{ success: boolean; message: string }>(`/campaigns/${id}/send`, {
       method: 'POST',
-      body: JSON.stringify({ recipient_group: recipientGroup }), // Match backend field name
+      body: JSON.stringify({ recipient_group: recipientGroup }),
     }),
 
   sendTest: (id: string, testEmail: string) =>
     request<{ success: boolean; message: string }>(`/campaigns/${id}/test`, {
       method: 'POST',
-      body: JSON.stringify({ test_email: testEmail }), // Match backend field name
+      body: JSON.stringify({ test_email: testEmail }),
     }),
 };
 
@@ -199,22 +210,23 @@ export const campaignsApi = {
 // =====================
 export const smtpApi = {
   getConfig: () =>
-    request<{ config: SmtpConfig }>('/config/smtp'), // Changed from /smtp/config to match backend
-saveConfig: (payload: any) =>
-  request<{ success: boolean; config?: SmtpConfig }>('/config/smtp', {
-    method: 'POST',
-    body: JSON.stringify({
-      host: payload.host,
-      port: payload.port,
-      secure: payload.secure,
-      user: payload.user,
-      pass: payload.pass,
-      fromEmail: payload.from_email || payload.fromEmail,  // Send camelCase
-      fromName: payload.from_name || payload.fromName,    // Send camelCase
-      name: payload.name || "Default SMTP Config",
-      isDefault: payload.isDefault !== undefined ? payload.isDefault : true,
+    request<{ config: SmtpConfig }>('/config/smtp'),
+
+  saveConfig: (payload: any) =>
+    request<{ success: boolean; config?: SmtpConfig }>('/config/smtp', {
+      method: 'POST',
+      body: JSON.stringify({
+        host: payload.host,
+        port: payload.port,
+        secure: payload.secure,
+        user: payload.user,
+        pass: payload.pass,
+        fromEmail: payload.from_email || payload.fromEmail,
+        fromName: payload.from_name || payload.fromName,
+        name: payload.name || "Default SMTP Config",
+        isDefault: payload.isDefault !== undefined ? payload.isDefault : true,
+      }),
     }),
-  }),
 
   setDefault: (configId: string) =>
     request<{ success: boolean }>(`/config/smtp/${configId}/default`, {
@@ -226,13 +238,13 @@ saveConfig: (payload: any) =>
       method: 'DELETE',
     }),
 
- testConfig: (email: string, smtpSettings?: any) => {
-  const payload = smtpSettings ? { email, ...smtpSettings } : { email };
-  return request<{ success: boolean; message: string }>('/config/smtp/test', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
-},
+  testConfig: (email: string, smtpSettings?: any) => {
+    const payload = smtpSettings ? { email, ...smtpSettings } : { email };
+    return request<{ success: boolean; message: string }>('/config/smtp/test', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
 };
 
 // =====================
