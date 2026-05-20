@@ -14,7 +14,7 @@ export async function authMiddleware(c: Context, next: Next) {
   const path = c.req.path;
 
   // Public paths — skip auth
-  const publicPaths = ["/api/auth/login", "/api/auth/register", "/health", "/api/user/info"];
+ const publicPaths = ["/api/auth/login", "/api/auth/register", "/health"];
   if (publicPaths.some((p) => path === p || path.startsWith(p + "/"))) {
     return await next();
   }
