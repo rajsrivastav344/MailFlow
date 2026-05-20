@@ -1,7 +1,6 @@
-// frontend/lib/auth-context.tsx
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 
 interface User {
@@ -19,7 +18,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>; // ← added
+  register: (email: string, password: string, name: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -29,16 +28,19 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mailflow-backend-tgj
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const isFetchingRef = useRef(false); // ← prevents concurrent/repeated fetchMe calls
   const router = useRouter();
   const pathname = usePathname();
 
   const fetchMe = useCallback(async () => {
-    const token = localStorage.getItem('token');
+    if (isFetchingRef.current) return; // ← guard: already in-flight, skip
+    isFetchingRef.current = true;
 
-    console.log('🔍 AuthContext - Token found:', !!token);
+    const token = localStorage.getItem('token');
 
     if (!token) {
       setIsLoading(false);
+      isFetchingRef.current = false;
       return;
     }
 
@@ -50,25 +52,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
       });
 
-      console.log('🔍 AuthContext - Response status:', response.status);
-
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.user) {
           setUser(data.user);
-          console.log('✅ AuthContext - User loaded:', data.user.email);
         } else {
           localStorage.removeItem('token');
+          setUser(null);
         }
       } else if (response.status === 401) {
-        console.log('🔍 Token invalid, clearing');
         localStorage.removeItem('token');
+        setUser(null);
       }
     } catch (error) {
       console.error('Fetch user error:', error);
       localStorage.removeItem('token');
+      setUser(null);
     } finally {
       setIsLoading(false);
+      isFetchingRef.current = false; // ← release guard
     }
   }, []);
 
@@ -81,20 +83,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const isPublicRoute = pathname === '/login' || pathname === '/register';
 
-    console.log('🔀 Redirect check:', { user: !!user, isLoading, pathname });
-
     if (user && isPublicRoute) {
-      console.log('➡️ Redirecting to /dashboard');
       router.replace('/dashboard');
     } else if (!user && !isPublicRoute && pathname !== '/' && pathname !== '/_not-found') {
-      console.log('➡️ Redirecting to /login');
       router.replace('/login');
     }
   }, [user, isLoading, pathname, router]);
 
   const login = async (email: string, password: string) => {
-    console.log('🔐 Login attempt:', { email });
-
     try {
       const response = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
@@ -103,12 +99,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       const result = await response.json();
-      console.log('📦 Login response:', { success: result.success, hasToken: !!result.token });
 
       if (response.ok && result.success && result.token) {
         localStorage.setItem('token', result.token);
-        await fetchMe(); // ← replaces setUser(result.user); ensures fresh user + triggers redirect
-        console.log('✅ Login successful, token saved');
+        isFetchingRef.current = false; // ← reset guard so fetchMe can run fresh
+        await fetchMe();
       } else {
         throw new Error(result.message || 'Login failed');
       }
@@ -135,7 +130,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error(result.message || 'Registration failed');
     }
 
-    // Auto-login after successful registration → fetchMe → redirect
     await login(email, password);
   };
 
