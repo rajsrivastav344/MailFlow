@@ -23,10 +23,11 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
   });
 
-  // Check if already logged in
+  // Check if already logged in on page load
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
+      console.log('Token found, redirecting to dashboard');
       window.location.href = '/dashboard';
     }
   }, []);
@@ -38,6 +39,8 @@ export default function LoginPage() {
     const BASE_URL = `${API_URL}/api`;
     
     try {
+      console.log('Logging in...');
+      
       const response = await fetch(`${BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -45,14 +48,16 @@ export default function LoginPage() {
       });
 
       const result = await response.json();
+      console.log('Login response:', result);
 
       if (response.ok && result.success && result.token) {
         // Save token
         localStorage.setItem('token', result.token);
+        console.log('Token saved, redirecting...');
         
         toast.success('Login successful! Redirecting...');
         
-        // Force hard redirect to dashboard
+        // Force redirect
         window.location.href = '/dashboard';
       } else {
         toast.error(result.message || 'Invalid email or password');
