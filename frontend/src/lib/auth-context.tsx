@@ -2,15 +2,23 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import type { User } from '@/types';
 import { usePathname, useRouter } from 'next/navigation';
+
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  created_at?: string;
+  last_login?: string;
+  is_active?: boolean;
+}
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;  // ← Must return Promise
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -24,8 +32,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   const fetchMe = useCallback(async () => {
+    // Get token from localStorage (where login saves it)
     const token = localStorage.getItem('token');
-    console.log('🔍 fetchMe - Token:', token ? `${token.substring(0, 20)}...` : 'NOT FOUND');
+    
+    console.log('🔍 AuthContext - Token found:', !!token);
     
     if (!token) {
       setIsLoading(false);
@@ -34,20 +44,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     try {
       const response = await fetch(`${API_URL}/api/user/info`, {
-        method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
       
-      console.log('🔍 fetchMe - Status:', response.status);
+      console.log('🔍 AuthContext - Response status:', response.status);
       
       if (response.ok) {
         const data = await response.json();
-        console.log('🔍 fetchMe - User:', data.user?.email);
         if (data.success && data.user) {
           setUser(data.user);
+          console.log('✅ AuthContext - User loaded:', data.user.email);
+        } else {
+          localStorage.removeItem('token');
         }
       } else if (response.status === 401) {
         console.log('🔍 Token invalid, clearing');
@@ -55,6 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error) {
       console.error('Fetch user error:', error);
+      localStorage.removeItem('token');
     } finally {
       setIsLoading(false);
     }
@@ -77,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, isLoading, pathname, router]);
 
   const login = async (email: string, password: string) => {
-    console.log('🔐 Login:', { email });
+    console.log('🔐 Login attempt:', { email });
     
     try {
       const response = await fetch(`${API_URL}/api/auth/login`, {
@@ -89,13 +101,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const result = await response.json();
       console.log('📦 Login response:', { success: result.success, hasToken: !!result.token });
 
-      if (result.success && result.token) {
+      if (response.ok && result.success && result.token) {
+        // Save token to localStorage
         localStorage.setItem('token', result.token);
-        console.log('✅ Token saved to localStorage');
         
         if (result.user) {
           setUser(result.user);
         }
+        
+        console.log('✅ Login successful, token saved');
       } else {
         throw new Error(result.message || 'Login failed');
       }
@@ -105,7 +119,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // ✅ Fix: Make logout async and return Promise
   const logout = async () => {
     const token = localStorage.getItem('token');
     if (token) {
