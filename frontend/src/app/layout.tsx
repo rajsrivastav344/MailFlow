@@ -1,3 +1,4 @@
+// frontend/app/layout.tsx
 import type { Metadata } from 'next';
 import { Syne } from 'next/font/google';
 import { GeistSans } from 'geist/font/sans';
@@ -20,6 +21,12 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable} ${syne.variable}`}>
+      <head>
+        {/* ✅ Add cache-control meta tags */}
+        <meta httpEquiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+        <meta httpEquiv="Pragma" content="no-cache" />
+        <meta httpEquiv="Expires" content="0" />
+      </head>
       <body className="font-sans bg-surface-50 text-ink antialiased">
         <Providers>{children}</Providers>
       </body>

@@ -5,6 +5,30 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   
+  // Add cache control headers to prevent stale JS
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, must-revalidate',
+          },
+        ],
+      },
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, must-revalidate',
+          },
+        ],
+      },
+    ];
+  },
+  
   // Your existing config...
   async rewrites() {
     if (process.env.NODE_ENV === 'development') {
