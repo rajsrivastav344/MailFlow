@@ -19,6 +19,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  register: (email: string, password: string, name: string) => Promise<void>; // ← added
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -32,16 +33,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   const fetchMe = useCallback(async () => {
-    // Get token from localStorage (where login saves it)
     const token = localStorage.getItem('token');
-    
+
     console.log('🔍 AuthContext - Token found:', !!token);
-    
+
     if (!token) {
       setIsLoading(false);
       return;
     }
-    
+
     try {
       const response = await fetch(`${API_URL}/api/user/info`, {
         headers: {
@@ -49,9 +49,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           'Content-Type': 'application/json',
         },
       });
-      
+
       console.log('🔍 AuthContext - Response status:', response.status);
-      
+
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.user) {
@@ -78,19 +78,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isLoading) return;
-    
+
     const isPublicRoute = pathname === '/login' || pathname === '/register';
-    
+
+    console.log('🔀 Redirect check:', { user: !!user, isLoading, pathname });
+
     if (user && isPublicRoute) {
+      console.log('➡️ Redirecting to /dashboard');
       router.replace('/dashboard');
     } else if (!user && !isPublicRoute && pathname !== '/' && pathname !== '/_not-found') {
+      console.log('➡️ Redirecting to /login');
       router.replace('/login');
     }
   }, [user, isLoading, pathname, router]);
 
   const login = async (email: string, password: string) => {
     console.log('🔐 Login attempt:', { email });
-    
+
     try {
       const response = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
@@ -102,13 +106,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('📦 Login response:', { success: result.success, hasToken: !!result.token });
 
       if (response.ok && result.success && result.token) {
-        // Save token to localStorage
         localStorage.setItem('token', result.token);
-        
-        if (result.user) {
-          setUser(result.user);
-        }
-        
+        await fetchMe(); // ← replaces setUser(result.user); ensures fresh user + triggers redirect
         console.log('✅ Login successful, token saved');
       } else {
         throw new Error(result.message || 'Login failed');
@@ -117,6 +116,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('❌ Login error:', error);
       throw error;
     }
+  };
+
+  const register = async (email: string, password: string, name: string) => {
+    const response = await fetch(`${API_URL}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password }),
+    });
+
+    const result = await response.json();
+
+    if (response.status === 409) {
+      throw new Error('An account with this email already exists.');
+    }
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || 'Registration failed');
+    }
+
+    // Auto-login after successful registration → fetchMe → redirect
+    await login(email, password);
   };
 
   const logout = async () => {
@@ -137,7 +157,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, isAuthenticated: !!user, login, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, isAuthenticated: !!user, login, logout, register }}>
       {children}
     </AuthContext.Provider>
   );
