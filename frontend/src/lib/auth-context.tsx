@@ -3,7 +3,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import type { User } from '@/types';  // ✅ Import User from types
+import type { User } from '@/types';  // ✅ Import User from types.ts
 
 interface AuthContextType {
   user: User | null;
