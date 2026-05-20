@@ -2,7 +2,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'react-hot-toast';
@@ -12,8 +11,8 @@ import { loginSchema, type LoginSchema } from '@/lib/validations';
 import { cn } from '@/lib/utils';
 
 export default function LoginPage() {
-  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
 
   const {
     register,
@@ -23,24 +22,22 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
   });
 
-  // Check if already logged in on page load
+  // Check if already logged in
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      console.log('Token found, redirecting to dashboard');
       window.location.href = '/dashboard';
     }
   }, []);
 
   const onSubmit = async (data: LoginSchema) => {
     setIsSubmitting(true);
+    setRedirecting(false);
     
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mailflow-backend-tgjz.onrender.com';
     const BASE_URL = `${API_URL}/api`;
     
     try {
-      console.log('Logging in...');
-      
       const response = await fetch(`${BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -48,17 +45,19 @@ export default function LoginPage() {
       });
 
       const result = await response.json();
-      console.log('Login response:', result);
 
       if (response.ok && result.success && result.token) {
         // Save token
         localStorage.setItem('token', result.token);
-        console.log('Token saved, redirecting...');
+        localStorage.setItem('user', JSON.stringify(result.user));
         
         toast.success('Login successful! Redirecting...');
+        setRedirecting(true);
         
-        // Force redirect
-        window.location.href = '/dashboard';
+        // Force redirect after a short delay
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 500);
       } else {
         toast.error(result.message || 'Invalid email or password');
       }
@@ -69,6 +68,17 @@ export default function LoginPage() {
       setIsSubmitting(false);
     }
   };
+
+  if (redirecting) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="mt-4 text-slate-600">Redirecting to dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-white p-4">

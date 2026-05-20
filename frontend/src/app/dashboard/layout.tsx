@@ -15,12 +15,9 @@ export default function DashboardLayout({
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for token
     const token = localStorage.getItem('token');
-    console.log('Dashboard layout - Token exists:', !!token);
     
     if (!token) {
-      console.log('No token, redirecting to login');
       router.replace('/login');
     } else {
       setIsLoading(false);
@@ -32,7 +29,7 @@ export default function DashboardLayout({
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-slate-600">Loading dashboard...</p>
+          <p className="mt-4 text-slate-600">Loading...</p>
         </div>
       </div>
     );
