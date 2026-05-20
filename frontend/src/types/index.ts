@@ -6,8 +6,8 @@
 export interface User {
   id: string;
   email: string;
-  name: string;        // ✅ Backend returns 'name'
-  created_at?: string;
+  name: string;
+ created_at?: string;
   last_login?: string;
   is_active?: boolean;
 }

@@ -1,3 +1,4 @@
+// frontend/app/login/page.tsx
 'use client';
 
 import { useState } from 'react';
@@ -7,10 +8,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';
 import { Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
+import { useAuth } from '@/lib/auth-context';
 import { loginSchema, type LoginSchema } from '@/lib/validations';
 import { cn } from '@/lib/utils';
 
 export default function LoginPage() {
+  const { login } = useAuth();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -25,39 +28,12 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginSchema) => {
     setIsSubmitting(true);
     
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mailflow-backend-tgjz.onrender.com';
-    const BASE_URL = `${API_URL}/api`;
-    
     try {
-      const response = await fetch(`${BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: data.email,
-          password: data.password,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (response.ok && result.success) {
-        // Save token
-        if (result.token) {
-          localStorage.setItem('token', result.token);
-          document.cookie = `token=${result.token}; path=/; max-age=604800`;
-        }
-        
-        toast.success('Login successful! Redirecting...');
-        
-        // Redirect to dashboard
-        window.location.href = '/dashboard';
-      } else {
-        toast.error(result.message || 'Invalid email or password');
-      }
+      await login(data.email, data.password);
+      toast.success('Login successful!');
+      router.push('/dashboard');
     } catch (error) {
-      toast.error('Network error. Please try again.');
+      toast.error(error instanceof Error ? error.message : 'Invalid email or password');
     } finally {
       setIsSubmitting(false);
     }

@@ -2,7 +2,6 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import Cookies from 'js-cookie';
-import { authApi } from '@/lib/api';
 import type { User } from '@/types';
 import { usePathname, useRouter } from 'next/navigation';
 
@@ -16,6 +15,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mailflow-backend-tgjz.onrender.com';
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -23,14 +24,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   const fetchMe = useCallback(async () => {
-    const token = Cookies.get('auth_token');
+    // ✅ Fix: Convert null to undefined using ?? undefined
+    let token: string | undefined = Cookies.get('auth_token') ?? undefined;
+    if (!token) {
+      token = localStorage.getItem('token') ?? undefined;
+    }
+    
     if (!token) {
       setIsLoading(false);
       return;
     }
+    
     try {
-      // ✅ Use the correct endpoint: /user/info
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/user/info`, {
+      const response = await fetch(`${API_URL}/api/user/info`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -39,14 +45,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (response.ok) {
         const data = await response.json();
-        setUser(data.user);
+        if (data.success && data.user) {
+          setUser(data.user);
+          console.log('✅ User authenticated:', data.user.email);
+        } else {
+          Cookies.remove('auth_token');
+          localStorage.removeItem('token');
+        }
       } else {
-        // Token is invalid
         Cookies.remove('auth_token');
+        localStorage.removeItem('token');
       }
     } catch (error) {
       console.error('Fetch user error:', error);
       Cookies.remove('auth_token');
+      localStorage.removeItem('token');
     } finally {
       setIsLoading(false);
     }
@@ -56,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     fetchMe();
   }, [fetchMe]);
 
-  // Redirect logic to avoid loops
+  // Redirect logic
   useEffect(() => {
     if (isLoading) return;
     
@@ -64,24 +77,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     if (user && isPublicRoute) {
       router.replace('/dashboard');
-    } else if (!user && !isPublicRoute && pathname !== '/') {
+    } else if (!user && !isPublicRoute && pathname !== '/' && pathname !== '/_not-found') {
       router.replace('/login');
     }
   }, [user, isLoading, pathname, router]);
 
   const login = async (email: string, password: string) => {
-    console.log('🔐 Login attempt with:', { email, password: '***' });
+    console.log('🔐 Login attempt with:', { email });
     
     try {
-      const res = await authApi.login(email, password);
-      console.log('📦 Login response:', res);
-      
-      if (res.token) {
-        Cookies.set('auth_token', res.token, { expires: 7, sameSite: 'strict' });
-        setUser(res.user);
+      const response = await fetch(`${API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const result = await response.json();
+      console.log('📦 Login response:', result);
+
+      if (response.ok && result.success && result.token) {
+        // ✅ Store token safely
+        localStorage.setItem('token', result.token);
+        Cookies.set('auth_token', result.token, { expires: 7, sameSite: 'strict' });
+        
+        if (result.user) {
+          setUser(result.user);
+        }
+        
         console.log('✅ Login successful');
       } else {
-        console.log('❌ No token in response');
+        throw new Error(result.message || 'Login failed');
       }
     } catch (error) {
       console.error('❌ Login error:', error);
@@ -91,8 +116,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      await authApi.logout();
+      const token = localStorage.getItem('token') ?? undefined;
+      if (token) {
+        await fetch(`${API_URL}/api/auth/logout`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
     } finally {
+      localStorage.removeItem('token');
       Cookies.remove('auth_token');
       setUser(null);
       router.replace('/login');
