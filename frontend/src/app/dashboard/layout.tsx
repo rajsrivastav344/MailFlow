@@ -1,31 +1,42 @@
 // frontend/app/dashboard/layout.tsx
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/auth-context';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { TopBar } from '@/components/layout/TopBar';
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push('/login');
+    // Check for token
+    const token = localStorage.getItem('token');
+    console.log('Dashboard layout - Token exists:', !!token);
+    
+    if (!token) {
+      console.log('No token, redirecting to login');
+      router.replace('/login');
+    } else {
+      setIsLoading(false);
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [router]);
 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="mt-4 text-slate-600">Loading dashboard...</p>
+        </div>
       </div>
     );
   }
-
-  if (!isAuthenticated) return null;
 
   return (
     <div className="flex h-screen">

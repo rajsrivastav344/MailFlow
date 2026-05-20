@@ -1,14 +1,14 @@
 // frontend/app/dashboard/page.tsx
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Users, Send, Mail, TrendingUp, ArrowUpRight, Clock, CheckCircle2, XCircle, FileEdit, Activity,
 } from 'lucide-react';
-import { dashboardApi } from '@/lib/api';
 import { formatNumber, formatPercent, timeAgo, getStatusColor } from '@/lib/utils';
 import { cn } from '@/lib/utils';
-import type { Campaign, DashboardStats } from '@/types';
+import type { Campaign } from '@/types';
 import Link from 'next/link';
 
 function StatCard({
@@ -56,7 +56,7 @@ function StatCard({
   );
 }
 
-function CampaignStatusIcon({ status }: { status: Campaign['status'] }) {
+function CampaignStatusIcon({ status }: { status: string }) {
   switch (status) {
     case 'sent':
       return <CheckCircle2 className="w-4 h-4 text-emerald-500" />;
@@ -74,11 +74,65 @@ function CampaignStatusIcon({ status }: { status: Campaign['status'] }) {
 }
 
 export default function DashboardPage() {
-  const { data: stats, isLoading, error } = useQuery<DashboardStats>({
-    queryKey: ['dashboard-stats'],
-    queryFn: dashboardApi.getStats,
-    refetchInterval: 30000,
-  });
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<any>(null);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        router.push('/login');
+        return;
+      }
+
+      try {
+        const response = await fetch('https://mailflow-backend-tgjz.onrender.com/api/dashboard/stats', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.status === 401) {
+          localStorage.removeItem('token');
+          router.push('/login');
+          return;
+        }
+
+        const data = await response.json();
+        if (data.success) {
+          setStats(data);
+        } else {
+          setError(true);
+        }
+      } catch (err) {
+        console.error('Error fetching stats:', err);
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, [router]);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm animate-pulse">
+              <div className="h-4 w-24 bg-slate-100 rounded mb-3" />
+              <div className="h-8 w-16 bg-slate-100 rounded" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   if (error) {
     return (
@@ -133,7 +187,7 @@ export default function DashboardPage() {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {statCards.map((card) => (
-          <StatCard key={card.label} {...card} loading={isLoading} />
+          <StatCard key={card.label} {...card} loading={loading} />
         ))}
       </div>
 
@@ -149,23 +203,7 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        {isLoading ? (
-          <div className="divide-y divide-slate-100">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center gap-4 px-6 py-4 animate-pulse">
-                <div className="w-4 h-4 bg-slate-100 rounded" />
-                <div className="flex-1">
-                  <div className="h-4 bg-slate-100 rounded w-32 mb-2" />
-                  <div className="h-3 bg-slate-100 rounded w-48" />
-                </div>
-                <div className="text-right">
-                  <div className="h-5 bg-slate-100 rounded w-16 mb-1" />
-                  <div className="h-3 bg-slate-100 rounded w-20" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : !stats?.recentCampaigns?.length ? (
+        {!stats?.recentCampaigns?.length ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mb-4">
               <Send className="w-7 h-7 text-slate-400" />
@@ -179,7 +217,7 @@ export default function DashboardPage() {
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
-            {stats.recentCampaigns.map((campaign) => (
+            {stats.recentCampaigns.map((campaign: any) => (
               <div key={campaign.id} className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50 transition-colors group">
                 <CampaignStatusIcon status={campaign.status} />
                 <div className="flex-1 min-w-0">
@@ -199,7 +237,6 @@ export default function DashboardPage() {
                     {timeAgo(campaign.created_at)}
                   </p>
                 </div>
-                {/* Only show delivery stats for sent campaigns */}
                 {campaign.status === 'sent' && (
                   <div className="text-right shrink-0 hidden md:block min-w-[80px]">
                     <p className="text-sm font-semibold text-emerald-600">
