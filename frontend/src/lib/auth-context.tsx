@@ -3,12 +3,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-
-interface User {
-  id: string;
-  email: string;
-  name: string;
-}
+import type { User } from '@/types';  // ✅ Import User from types
 
 interface AuthContextType {
   user: User | null;
@@ -29,7 +24,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Load user from localStorage on mount (no API call!)
   useEffect(() => {
     const token = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
@@ -44,7 +38,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  // Redirect logic
   useEffect(() => {
     if (isLoading) return;
 
@@ -98,7 +91,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error(result.message || 'Registration failed');
     }
 
-    // Auto-login after registration
     await login(email, password);
   };
 
