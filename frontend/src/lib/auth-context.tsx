@@ -1,15 +1,13 @@
+// frontend/lib/auth-context.tsx
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 
 interface User {
   id: string;
   email: string;
   name: string;
-  created_at?: string;
-  last_login?: string;
-  is_active?: boolean;
 }
 
 interface AuthContextType {
@@ -17,7 +15,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
+  logout: () => void;
   register: (email: string, password: string, name: string) => Promise<void>;
 }
 
@@ -28,67 +26,37 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mailflow-backend-tgj
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const isFetchingRef = useRef(false); // ← prevents concurrent/repeated fetchMe calls
   const router = useRouter();
   const pathname = usePathname();
 
-  const fetchMe = useCallback(async () => {
-    if (isFetchingRef.current) return; // ← guard: already in-flight, skip
-    isFetchingRef.current = true;
-
+  // Load user from localStorage on mount (no API call!)
+  useEffect(() => {
     const token = localStorage.getItem('token');
-
-    if (!token) {
-      setIsLoading(false);
-      isFetchingRef.current = false;
-      return;
-    }
-
-    try {
-      const response = await fetch(`${API_URL}/api/user/info`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.user) {
-          setUser(data.user);
-        } else {
-          localStorage.removeItem('token');
-          setUser(null);
-        }
-      } else if (response.status === 401) {
-        localStorage.removeItem('token');
-        setUser(null);
+    const savedUser = localStorage.getItem('user');
+    
+    if (token && savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (e) {
+        console.error('Failed to parse user:', e);
       }
-    } catch (error) {
-      console.error('Fetch user error:', error);
-      localStorage.removeItem('token');
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-      isFetchingRef.current = false; // ← release guard
     }
+    setIsLoading(false);
   }, []);
 
-  useEffect(() => {
-    fetchMe();
-  }, [fetchMe]);
-
+  // Redirect logic
   useEffect(() => {
     if (isLoading) return;
 
+    const token = localStorage.getItem('token');
     const isPublicRoute = pathname === '/login' || pathname === '/register';
 
-    if (user && isPublicRoute) {
+    if (token && isPublicRoute) {
       router.replace('/dashboard');
-    } else if (!user && !isPublicRoute && pathname !== '/' && pathname !== '/_not-found') {
+    } else if (!token && !isPublicRoute && pathname !== '/' && pathname !== '/_not-found') {
       router.replace('/login');
     }
-  }, [user, isLoading, pathname, router]);
+  }, [isLoading, pathname, router]);
 
   const login = async (email: string, password: string) => {
     try {
@@ -102,13 +70,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (response.ok && result.success && result.token) {
         localStorage.setItem('token', result.token);
-        isFetchingRef.current = false; // ← reset guard so fetchMe can run fresh
-        await fetchMe();
+        localStorage.setItem('user', JSON.stringify(result.user));
+        setUser(result.user);
       } else {
         throw new Error(result.message || 'Login failed');
       }
     } catch (error) {
-      console.error('❌ Login error:', error);
+      console.error('Login error:', error);
       throw error;
     }
   };
@@ -130,28 +98,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error(result.message || 'Registration failed');
     }
 
+    // Auto-login after registration
     await login(email, password);
   };
 
-  const logout = async () => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        await fetch(`${API_URL}/api/auth/logout`, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-      } catch (error) {
-        console.error('Logout error:', error);
-      }
-    }
+  const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setUser(null);
     router.replace('/login');
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, isAuthenticated: !!user, login, logout, register }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      isLoading, 
+      isAuthenticated: !!localStorage.getItem('token'), 
+      login, 
+      logout, 
+      register 
+    }}>
       {children}
     </AuthContext.Provider>
   );
