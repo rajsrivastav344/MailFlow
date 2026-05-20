@@ -1,9 +1,10 @@
-// frontend/app/login/page.tsx
 'use client';
 
 import { useState } from 'react';
+import { useAuth } from '@/lib/auth-context';
 
 export default function LoginPage() {
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -15,27 +16,11 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const response = await fetch('https://mailflow-backend-tgjz.onrender.com/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-      console.log('Login response:', data);
-
-      if (data.success && data.token) {
-        // Save token
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        
-        // Force redirect to dashboard
-        window.location.href = '/dashboard';
-      } else {
-        setError(data.message || 'Login failed');
-      }
-    } catch (err) {
-      setError('Network error. Please try again.');
+      await login(email, password);
+      // No redirect needed — auth-context useEffect handles it
+      // once user state is set, it redirects to /dashboard automatically
+    } catch (err: any) {
+      setError(err.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
