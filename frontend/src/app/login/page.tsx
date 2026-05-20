@@ -1,4 +1,3 @@
-// frontend/app/login/page.tsx
 'use client';
 
 import { useState } from 'react';
@@ -26,7 +25,6 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginSchema) => {
     setIsSubmitting(true);
     
-    // Get API URL from environment variable
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mailflow-backend-tgjz.onrender.com';
     const BASE_URL = `${API_URL}/api`;
     
@@ -48,19 +46,28 @@ export default function LoginPage() {
       console.log('📦 Login response:', result);
 
       if (response.ok && result.success) {
-        // Store token in localStorage or cookie
+        // Store token
         if (result.token) {
           localStorage.setItem('auth_token', result.token);
-          document.cookie = `auth_token=${result.token}; path=/; max-age=604800`; // 7 days
+          document.cookie = `auth_token=${result.token}; path=/; max-age=604800`;
         }
+        
+        // Store user info
+        if (result.user) {
+          localStorage.setItem('user', JSON.stringify(result.user));
+        }
+        
         toast.success('Welcome back!');
-        router.push('/dashboard');
+        
+        // Force redirect using window.location
+        console.log('🔄 Redirecting to dashboard...');
+        window.location.href = '/dashboard';
       } else {
         toast.error(result.message || 'Invalid email or password');
       }
     } catch (error) {
       console.error('❌ Login error:', error);
-      toast.error('Network error. Please check your connection and try again.');
+      toast.error('Network error. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
