@@ -10,7 +10,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
+  logout: () => Promise<void>;  // ← Must return Promise
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -24,10 +24,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   const fetchMe = useCallback(async () => {
-    // Get token from localStorage (where login saves it)
     const token = localStorage.getItem('token');
-    
-    console.log('🔍 fetchMe - Token found:', !!token);
+    console.log('🔍 fetchMe - Token:', token ? `${token.substring(0, 20)}...` : 'NOT FOUND');
     
     if (!token) {
       setIsLoading(false);
@@ -36,29 +34,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     try {
       const response = await fetch(`${API_URL}/api/user/info`, {
+        method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
       
-      console.log('🔍 fetchMe - Response status:', response.status);
+      console.log('🔍 fetchMe - Status:', response.status);
       
       if (response.ok) {
         const data = await response.json();
-        console.log('🔍 fetchMe - User data:', data);
+        console.log('🔍 fetchMe - User:', data.user?.email);
         if (data.success && data.user) {
           setUser(data.user);
-        } else {
-          localStorage.removeItem('token');
         }
       } else if (response.status === 401) {
-        console.log('🔍 Token invalid, removing');
+        console.log('🔍 Token invalid, clearing');
         localStorage.removeItem('token');
       }
     } catch (error) {
       console.error('Fetch user error:', error);
-      localStorage.removeItem('token');
     } finally {
       setIsLoading(false);
     }
@@ -68,7 +64,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     fetchMe();
   }, [fetchMe]);
 
-  // Redirect logic
   useEffect(() => {
     if (isLoading) return;
     
@@ -82,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, isLoading, pathname, router]);
 
   const login = async (email: string, password: string) => {
-    console.log('🔐 Login attempt with:', { email });
+    console.log('🔐 Login:', { email });
     
     try {
       const response = await fetch(`${API_URL}/api/auth/login`, {
@@ -92,17 +87,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       const result = await response.json();
-      console.log('📦 Login response:', result);
+      console.log('📦 Login response:', { success: result.success, hasToken: !!result.token });
 
-      if (response.ok && result.success && result.token) {
-        // Save token to localStorage
+      if (result.success && result.token) {
         localStorage.setItem('token', result.token);
+        console.log('✅ Token saved to localStorage');
         
         if (result.user) {
           setUser(result.user);
         }
-        
-        console.log('✅ Login successful, token saved');
       } else {
         throw new Error(result.message || 'Login failed');
       }
@@ -112,6 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // ✅ Fix: Make logout async and return Promise
   const logout = async () => {
     const token = localStorage.getItem('token');
     if (token) {
