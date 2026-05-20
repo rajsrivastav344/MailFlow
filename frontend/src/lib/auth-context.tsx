@@ -52,26 +52,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [isLoading, pathname, router]);
 
   const login = async (email: string, password: string) => {
-    try {
-      const response = await fetch(`${API_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+    const response = await fetch(`${API_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
 
-      const result = await response.json();
+    const result = await response.json();
 
-      if (response.ok && result.success && result.token) {
-        localStorage.setItem('token', result.token);
-        localStorage.setItem('user', JSON.stringify(result.user));
-        setUser(result.user);
-      } else {
-        throw new Error(result.message || 'Login failed');
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      throw error;
+    if (!response.ok || !result.success || !result.token) {
+      throw new Error(result.message || 'Login failed');
     }
+
+    localStorage.setItem('token', result.token);
+    localStorage.setItem('user', JSON.stringify(result.user));
+    setUser(result.user);
   };
 
   const register = async (email: string, password: string, name: string) => {
@@ -102,14 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      isLoading, 
-      isAuthenticated: !!localStorage.getItem('token'), 
-      login, 
-      logout, 
-      register 
-    }}>
+    <AuthContext.Provider value={{ user, isLoading, isAuthenticated: !!user, login, logout, register }}>
       {children}
     </AuthContext.Provider>
   );
