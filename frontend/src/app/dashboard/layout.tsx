@@ -1,3 +1,4 @@
+// frontend/app/dashboard/layout.tsx
 'use client';
 
 import { useEffect } from 'react';
@@ -18,11 +19,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-surface-50">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-ink-muted">Loading...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -30,14 +28,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!isAuthenticated) return null;
 
   return (
-    <div className="min-h-screen flex bg-surface-50">
+    <div className="flex h-screen">
       <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col overflow-hidden">
         <TopBar />
-        <main className="flex-1 p-6 overflow-auto">
-          <div className="max-w-7xl mx-auto page-enter">
-            {children}
-          </div>
+        <main className="flex-1 overflow-y-auto p-6 bg-slate-50">
+          {children}
         </main>
       </div>
     </div>
