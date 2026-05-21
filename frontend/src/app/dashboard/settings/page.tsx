@@ -5,11 +5,11 @@ import { useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'react-hot-toast';
-import { Lock, Loader2, User as UserIcon, Shield, Mail, Calendar } from 'lucide-react';
+import { Lock, Loader2, User as UserIcon, Shield, Mail } from 'lucide-react';
 import { authApi } from '@/lib/api';
 import { changePasswordSchema, type ChangePasswordSchema } from '@/lib/validations';
 import { useAuth } from '@/lib/auth-context';
-import { cn, formatDate } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -70,12 +70,6 @@ export default function SettingsPage() {
                   <Shield className="w-3 h-3" />
                   Active Account
                 </span>
-                {user?.created_at && (
-                  <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                    <Calendar className="w-3 h-3" />
-                    <span>Member since {formatDate(user.created_at)}</span>
-                  </div>
-                )}
               </div>
             </div>
           </div>
