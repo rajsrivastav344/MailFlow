@@ -28,11 +28,17 @@ async function request<T>(
   options: RequestInit = {}
 ): Promise<T> {
   // Try to get token from localStorage first
-  let token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  let token: string | undefined;
+  
+  if (typeof window !== 'undefined') {
+    const storedToken = localStorage.getItem('token');
+    token = storedToken !== null ? storedToken : undefined;
+  }
   
   // Fallback to cookie if not in localStorage
   if (!token) {
-    token = Cookies.get('auth_token');
+    const cookieToken = Cookies.get('auth_token');
+    token = cookieToken !== undefined ? cookieToken : undefined;
   }
 
   const headers: Record<string, string> = {
@@ -52,8 +58,10 @@ async function request<T>(
 
   if (res.status === 401) {
     // Clear tokens on 401
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    }
     Cookies.remove('auth_token');
     
     // Don't redirect if already on login page to avoid loops
@@ -90,10 +98,6 @@ export const authApi = {
 
   logout: () =>
     request<{ success: boolean }>('/auth/logout', { method: 'POST' }),
-
-  // ✅ REMOVED - This was causing the 401 error
-  // me: () =>
-  //   request<{ user: User }>('/user/info'),
 
   changePassword: (currentPassword: string, newPassword: string) =>
     request<{ success: boolean }>('/auth/change-password', {
@@ -132,7 +136,11 @@ export const contactsApi = {
     request<{ success: boolean }>(`/contacts/${id}`, { method: 'DELETE' }),
 
   importCsv: async (formData: FormData) => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    let token: string | undefined;
+    if (typeof window !== 'undefined') {
+      const storedToken = localStorage.getItem('token');
+      token = storedToken !== null ? storedToken : undefined;
+    }
     const response = await fetch(`${BASE_URL}/contacts/import`, {
       method: 'POST',
       headers: token ? { Authorization: `Bearer ${token}` } : {},
