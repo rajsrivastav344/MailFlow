@@ -3,7 +3,16 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import type { User } from '@/types';  // ✅ Import User from types.ts
+
+// ✅ Define User interface directly in this file (no import needed)
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  created_at: string;  // ✅ This is the key fix
+  last_login?: string;
+  is_active?: boolean;
+}
 
 interface AuthContextType {
   user: User | null;
